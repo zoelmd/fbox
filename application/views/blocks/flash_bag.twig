@@ -1,0 +1,18 @@
+{% if flash is not empty %}
+    {% for flashBag in flash %}
+      <div class='alert alert-{{ flashBag.type }}' role='alert'>
+    {% if flashBag.close == true %}
+      <a href='#' class='close' data-id="{{ flashBag.notif_Id }}" data-dismiss='alert' aria-label='close'><i class='fa fa-close fa-fw' aria-hidden='true'></i></a>
+    {% endif %}
+    
+    {% if flashBag.icon != false %}
+      <i class='fa fa-{{ flashBag.icon }} fa-fw' aria-hidden='true'></i>
+    {% endif %}
+      {% if flashBag.html %}
+        {{ flashBag.message|raw }}
+      {% else %}
+        {{ flashBag.message|nl2br }}
+      {% endif %}
+      </div>
+    {% endfor %}
+{% endif %}

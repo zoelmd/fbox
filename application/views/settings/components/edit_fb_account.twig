@@ -1,0 +1,70 @@
+<div id="editFbAccount" class="modal fade" role="dialog">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header">
+        <button type="button" class="close" data-dismiss="modal">&times;</button>
+        <h4 class="modal-title">{{ l('Edit Facebook account') }}</h4>
+      </div>
+      <div class="modal-body">
+        <div class="msgBox"></div>
+         <input type="hidden" class="form-control" name="facebookId" id="facebookId" placeholder="{{ l('Facebook ID') }}">
+        <div class="row">
+          <div class="col-sm-12">
+             <div class="form-group">
+              <label for="newFacebookId">{{ l('Facebook ID') }} <small>({{l('Please make sure to use Correct and real facebok ID')}})</small></label>
+              <input type="text" class="form-control" name="newFacebookId" id="newFacebookId" placeholder="{{ l('Facebook ID') }}">
+            </div>
+            <p><a href="https://findmyfbid.com/" target="_blank">{{l('Find my facebook ID')}}</a></p>
+          </div>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-default" data-dismiss="modal">{{ l("Close") }}</button>
+        <input type='button' class='btn btn-primary' id="editFbAccountBtn" value='{{ l("Save") }}'>
+      </div>
+    </div>
+  </div>
+</div>
+<script>
+$(function(){
+  $(".editFbAccount").click(function(){
+    $("#facebookId").val($(this).val());
+    $("#newFacebookId").val($(this).val());
+    $("#editFbAccount").modal("show");
+  });
+
+  $("#editFbAccountBtn" ).click(function(){
+      kp_preloader("on","#editFbAccount .modal-body");
+      $.ajax({
+        url: '{{ base_url("settings/fb_accounts/edit_fbaccount") }}',
+        dataType: 'json',
+        type: 'post',
+        contentType: 'application/x-www-form-urlencoded',
+        data: { 
+          fbaccount_id: $('#facebookId').val(),
+          new_fbaccount_id: $('#newFacebookId').val(),
+          {{ config_item('csrf_token_name') }}: getCookie('{{ config_item('csrf_cookie_name') }}') 
+        },
+        success: function( data, textStatus, jQxhr ){
+          if(data.status == "ok"){
+            alertBox(data.message,"success",".msgBox",false,false);
+              $(".deleteBtn_fb_account").prop('disabled', true);
+              $(document).on('hide.bs.modal','#editFbAccount', function () {
+              location.reload();
+            });
+          }else{
+            alertBox(data.message,"danger",".msgBox",false,false);
+          }
+        },
+        error: function( jqXhr, textStatus, errorThrown ){ 
+          console.log(errorThrown);
+          alertBox("{{ l('Unable to complete your request') }}","danger",".msgBox",false,false);
+        },
+        complete: function() {
+          kp_preloader("off","#editFbAccount .modal-body");
+        }
+      });
+      $('.msgBox').html("");
+    });
+});
+</script>

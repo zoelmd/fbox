@@ -1,0 +1,40 @@
+<li class="dropdown notifications-menu">
+	<a href="#" class="dropdown-toggle" data-toggle="dropdown" aria-expanded="true">
+		<i class="fa fa-bell-o"></i>
+		{% if getUserNotifications().count_notifications != 0%}
+		<span class="label label-danger notifCount">{{getUserNotifications().count_notifications}}</span>
+		{% endif %}
+	</a>
+	<ul class="dropdown-menu">
+		<li class="header">{{l('You have %s notifications',getUserNotifications().count_notifications)}}</li>
+		<li>
+			<ul class="menu">
+				{% for n in getUserNotifications().notifications %}
+
+					{% if n.type == "success" %}
+						{% set icon = "check-circle" %}
+					{% elseif n.type == "info" %}
+						{% set icon = "info-circle" %}
+					{% elseif n.type == "warning" %}
+						{% set icon = "exclamation-circle" %}
+					{% elseif n.type == "danger" %}
+						{% set icon = "exclamation-triangle" %}
+					{% elseif n.type == "primary" %}
+						{% set icon = "info-circle" %}
+					{% endif %}
+
+					<li>
+					<a href="{{ base_url('my_notifications#notification_' ~ n.unid) }}"><i class="fa fa-{{icon}} text-{{n.type}}"></i> {{n.title}}</a>
+					</li>
+				{% else %}
+					<li><a href="#">{{("You don't have any notifications")}}</a></li>
+				{% endfor %}
+			</ul>
+		</li>
+		<li class="footer">
+			<a href="{{base_url('my_notifications')}}">
+				{{l('View all')}}
+			</a>
+		</li>
+	</ul>
+</li>

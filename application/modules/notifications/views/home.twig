@@ -1,0 +1,271 @@
+{% extends "base_dashboard.twig" %}
+
+{% block title %}{{ l('Notifications') }}{% endblock %}
+
+{% block stylesheets %}
+	{{ parent() }}
+	<link href="{{ assets('theme/default/css/token-input-facebook.css') }}" rel="stylesheet" type="text/css" />
+{% endblock %}
+
+{% block body %}
+{{ parent() }}
+<div class="panel panel-default">
+	<div class="panel-heading">
+		<h3 class="panel-title">
+			<i class="fa fa-bell" aria-hidden="true"></i> 
+			{{ l("Notifications") }}
+			<span class="TotalRecords">{{ l('Showing %s of %s ',perPage,total_notifications) }}</span>
+		</h3>
+	</div>
+	<div class="panel-body">
+
+		<a href="{{ base_url("notifications/add") }}" class="btn btn-primary"><i class="fa fa-plus fa-fw" aria-hidden="true"></i>{{ l('Add new') }}</a>
+
+		<button type="button" class="btn btn-danger" type="button" id="deleteBtn">
+			<i class="fa fa-trash fa-fw" aria-hidden="true"></i>
+			{{ l('Delete') }}
+		</button>
+
+		<table class="table table-bordered table-striped dataTable" id="datatable" width="100%">
+			<thead>
+				<tr>
+					<td width="20px">
+						<input type='checkbox' id="checkbox-all" class="check-all checkbox-style" name='a' />
+						<label for="checkbox-all"></label>
+					</td>
+					<td>{{ l('Title') }}</td>
+					<td>{{ l('Type') }}</td>
+					<td class="hidden-sm hidden-xs">{{ l('DATE_CREATED') }}</td>
+					<td></td>
+				</tr>
+			</thead>
+				{% if notifications is not empty %}
+					{% for notification in notifications %}
+						<tr>
+							<td>
+								<input type='checkbox' class='checkbox checkbox-style' name='checkbox[]' id='checkbox-{{ notification.id }}' value='{{ notification.id }}' />
+								<label for='checkbox-{{ notification.id }}'></label>
+							</td>
+							<td>{{ notification.title|capitalize }}</td>
+							<td><span class="badge badge-{{ notification.type }}">{{ notification.type|capitalize }}</span></td>
+							<td class="hidden-sm hidden-xs">{{ notification.date_created|date(date_format ~ ' H:i') }}</td>
+							<td>
+							<button class='btn btn-primary nDetails' value="{{ notification.id }}">
+								<i class='fa fa-list-alt fa-fw'></i> 
+								<span class="hidden-xs">{{ l('Details') }}</span>
+							</button>
+							<a href="{{ base_url("notifications/edit/" ~ notification.id) }}" class='btn btn-primary'>
+								<i class='fa fa-pencil-square-o fa-fw'></i> 
+								<span class="hidden-xs">{{ l('Edit') }}</span>
+							</a>
+							</td>
+						</tr>
+					{% endfor %}
+				{% else %}
+					<td colspan="6">{{ l('No records') }}</td>
+					</tr>
+				{% endif %}
+		</table>
+	</div>
+</div>
+
+<!-- notification details -->
+<div class="modal fade" id="notificationDetails" tabindex="-1" data-backdrop="static" role="dialog" aria-labelledby="notificationDetailslebel">
+  <div class="modal-dialog" role="document">
+    <div class="modal-content">
+      <form>
+        <div class="modal-header">
+          <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+          <h4 class="modal-title" id="userDetailsLabel">{{ l('Notification Details') }}</h4>
+        </div>
+        <div class="modal-body">
+          <div class="messageBox"></div>
+          <input type="hidden" name="notificationId">
+          <div class="nDetailsContainer">
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-default" data-dismiss="modal">{{ l('CLOSE') }}</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<!-- Add notification -->
+<div class="modal fade" id="addNewNotif" tabindex="-1" data-backdrop="static" role="dialog" aria-labelledby="notificationDetailslebel">
+  <div class="modal-dialog" role="document">
+    <div class="modal-content">
+      <form>
+        <div class="modal-header">
+          <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+          <h4 class="modal-title" id="userDetailsLabel">{{ l('Notification Details') }}</h4>
+        </div>
+        <div class="modal-body">
+          <div class="messageBox"></div>
+          	<div class="row">
+            	<div class="col-sm-12 col-md-6">
+                	<div class="form-group">
+				    	<label for="title" class="sr-only">{{ l('Title') }}</label>
+				    	<input type="text" name="title" id="title" class="form-control" placeholder="{{ l('Title') }}">
+					</div>
+             	</div>
+             	<div class="col-sm-12 col-md-6">
+                	<div class="form-group">
+				    	<label for="title" class="sr-only">{{ l('Type') }}</label>
+				    	<select name="type" id="type" class="form-control">
+				    		<option value="">{{ l('Choose notification type') }}</option>
+				    		<option value="1" style="background: #a94442;color:white">{{ l('Danger') }}</option>
+				    		<option value="2" style="background: #dab76d;color:white">{{ l('Warning') }}</option>
+				    		<option value="3" style="background: #31708f;color:white">{{ l('info') }}</option>
+				    		<option value="4" style="background: #3c763d;color:white">{{ l('Success') }}</option>
+				    		<option value="5" style="background: #{{ app_settings['theme_color'] }};color:white">{{ l('primary') }}</option>
+				    	</select>
+					</div>
+             	</div>
+				<div class="col-sm-12">
+					<div class="form-group">
+						<label for="content" class="sr-only">{{ l('notification Content') }}</label>
+						<textarea name="content" id="content" class="form-control" placeholder="{{ l('Notifications content') }}"></textarea>
+					</div>
+				</div>
+      			<div class="col-sm-12">
+      				<div class="form-group">
+						<label for="recipients">{{ l('Recipients') }} (<small>{{ l('Search for users by username or email') }}</small>)</label>
+						<input name="recipients" id="recipients" class="form-control autocomplete" placeholder="{{ l('Notifications recipients') }}" />
+					</div>
+				</div>
+				<div class="col-sm-12">
+      				<div class="form-group">
+      					<input type='checkbox' class='checkbox checkbox-style' name='recipients-all' id='recipients-all' value='all' />
+						<label for='recipients-all'></label>
+						<label for='recipients-all'> <small>{{ l('Send to all Users') }}</small></label>
+					</div>
+				</div>
+				<div class="col-sm-12 col-md-6">
+                	<div class="form-group">
+				    	<label for="closeAfter">{{ l('Disable the notification after') }}</label>
+				    	<select name="closeAfter" id="closeAfter" class="form-control">
+				    		<option value="1" >{{ l('Seen') }}</option>
+				    		<option value="2" >{{ l('Close') }}</option>
+				    	</select>
+					</div>
+             	</div>
+      		</div>
+
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-default" data-dismiss="modal">{{ l('CLOSE') }}</button>
+          <button type="button" id="addNewNotifBtn" class="btn btn-primary">{{ l('Add') }}</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+{# Box variables #}
+{% set box_id = "notification" %}
+{% set delete_msg = l("Are you sure you want to delete the selected records?") %}
+{% include "blocks/delete_modal.twig" %}
+
+{% endblock %}
+
+{% block javascripts_footer %}
+	{{ parent() }}
+	<script src="{{ assets('theme/default/js/libs/jquery.tokeninput.js') }}"></script>
+	<script src="{{ assets('theme/default/tinymce/tinymce.min.js') }}"></script>
+  	<script>tinymce.init({selector:'#content',plugins: "fullscreen,code,media,image" });</script>
+	<script type="text/javascript">
+    $(document).ready(function() {
+		
+        $(".autocomplete").tokenInput("{{ base_url('users_manager/search_get') }}",{
+			searchingText: '{{ l('Searching...') }}',
+        	theme: "facebook",
+        	preventDuplicates: true,
+        	tokenFormatter: function(item){ return '<li><p>'+item.name+'</p><input type="hidden" value="'+item.id+'" name="recipients_ids[]"/></li>' } 
+        });
+    	
+
+		{# -------------------------- Notification details ------------------------ #}
+	    $(".nDetails").click(function(){
+	    	kp_preloader("off","#notificationDetails .modal-body");
+	    	$("#notificationDetails .messageBox").html("");
+	    	$(".nDetailsContainer").html("");
+
+	    	var nid = $(this).val();
+	     	$('#notificationId').val(nid);
+
+	    	$.ajax({
+	        	url: '{{ base_url("notifications/details/") }}',
+	        	dataType: 'json',
+	        	type: 'post',
+	        	contentType: 'application/x-www-form-urlencoded',
+	        	data: {
+	        		id: nid,
+	          		{{ config_item('csrf_token_name') }}: getCookie('{{ config_item('csrf_cookie_name') }}') 
+	        	},
+	        	success: function( data, textStatus, jQxhr ){
+		          if(data.status == "ok"){
+		          	$(".nDetailsContainer").html(data.content);
+		          }else{
+		            alertBox(data.message,"danger","#notificationDetails .messageBox",false);
+		          }
+		        },
+		        error: function( jqXhr, textStatus, errorThrown ){ 
+		          console.log(errorThrown);
+		          alertBox("{{ l('Unable to complete your request') }}","danger","#notificationDetails .messageBox",false);
+		        },
+		        complete: function() {
+		          kp_preloader("off","#notificationDetails .modal-body");
+		        }
+	      	});
+			$("#notificationDetails").modal("show");
+	    });
+
+	    {# ----------------------------- Delete action ---------------------------------- #}
+	    $("#deleteBtn").click(function(){
+	    	if($('tbody .checkbox:checked').length > 0){
+				$("#delete_notification").modal("show");
+	    	}
+	    });
+
+		$(".deleteBtn_notification" ).click(function(){
+	  		var posts = [];
+	  		$('tbody .checkbox:checked').each(function(){
+	    		posts.push($(this).val());
+	  		});
+
+	  		kp_preloader("on","#delete_notification .modal-body");
+			$(".deleteBtn_notification").prop('disabled', true);
+
+			$.ajax({
+				url: '{{ base_url("notifications/delete") }}',
+				dataType: 'json',
+				type: 'post',
+				contentType: 'application/x-www-form-urlencoded',
+				data: { ids: JSON.stringify(posts), {{ config_item('csrf_token_name') }}: getCookie('{{ config_item('csrf_cookie_name') }}') },
+				success: function( data, textStatus, jQxhr ){
+				  if(data.status == "success"){
+				    alertBox(data.message,"success",".deleteAlertBox_notification",false,false);
+				      $(".deleteBtn_notification").prop('disabled', true);
+				    $(document).on('hide.bs.modal','#delete_notification', function () {location.reload();});
+				  }else{
+				    alertBox(data.message,"danger",".deleteAlertBox_notification",false,false);
+				  }
+				},
+				error: function( jqXhr, textStatus, errorThrown ){ 
+				  console.log(errorThrown);
+				  alertBox("{{ l('Unable to complete your request') }}","danger",".deleteAlertBox_notification",false,false);
+				},
+				complete: function(){
+					kp_preloader("off","#delete_notification .modal-body");
+					$(".deleteBtn_notification").prop('disabled', false);
+				}
+			});
+
+			$('.deleteBox_content_notification').html("");
+
+	   		});
+	   	});
+    </script>
+{% endblock %}

@@ -1,0 +1,172 @@
+{% extends "base_dashboard.twig" %}
+
+{% block title %}
+  {{ l("FAQs") }}
+{% endblock %}
+
+{% block body %}
+  {{ parent() }}
+<div class="messageBox"></div>
+<div class="panel panel-default">
+  <div class="panel-heading">
+    <h3 class="panel-title">
+      <i class="glyphicon glyphicon-time"></i> {{ l("FAQs") }}
+      <span class="TotalRecords">{{ l('Showing %s of %s ',perPage,total_faqs) }}</span>
+    </h3>
+  </div>
+  <div class="panel-body has-responsive-table">
+    <form method="POST">
+      
+      <div class="row">
+        <div class="col-sm-12">
+          <button type="button" class="btn btn-danger right" id="deleteBtn">
+            <i class="fa fa-trash fa-fw" aria-hidden="true"></i>
+            {{ lang.s('Delete') }}
+          </button>
+
+          <a href="{{ base_url("faq/manage/add") }}" class="btn btn-primary right" id="newFAQ">
+            <i class="fa fa-plus fa-fw" aria-hidden="true"></i>
+            {{ lang.s('New FAQ') }}
+          </a>
+        </div>
+      </div>
+      
+
+      <table class="table table-bordered table-striped dataTable" id="datatable" width="100%">
+        <thead>
+          <tr>
+            <td  width="20px">
+              <input type='checkbox' id="checkbox-all" class="check-all checkbox-style" name='a' />
+              <label for="checkbox-all"></label>
+            </td>
+            <td>{{ l("FAQ") }}</td>
+            <td>{{ l('Created at') }}</td>
+            <td></td>
+          </tr>
+        </thead>
+        <tbody>
+              {% for faq in faqs %}
+                  <tr>
+                    <td>
+                      <input type='checkbox' class='checkbox checkbox-style' name='checkbox[]' id='checkbox-{{ faq.id }}' value='{{ faq.id }}' />
+                      <label for='checkbox-{{ faq.id }}'></label>
+                    </td>
+                    <td>{{ faq.question }}</td>
+                    <td>{{ faq.created_at|date(date_format~" H:i") }}</td>
+                    <td>
+                      <a href="{{ base_url("faq/manage/edit/" ~ faq.id) }}" title='{{ l('Edit') }}' data-toggle='kp_tooltip' data-placement='top' class='btn btn-primary editFAQ' >
+                      <i class="fa fa-pencil-square-o" aria-hidden="true"></i>
+                      </a>
+                      <button type='button' title='{{ l('Active/inactive') }}' data-toggle='kp_tooltip' data-placement='top' class='btn btn-{% if faq.active == 0 %}warning{% else %}primary{% endif%} toggleActiveBtn' value='{{ faq.id }}' >
+                      <i class="fa fa-eye{% if faq.active == 0 %}-slash{% endif%}" aria-hidden="true"></i>
+                      </button>
+                      <a href="{{ base_url("faq#"~"faq-"~faq.id) }}" title='{{ l('View') }}' data-toggle='kp_tooltip' data-placement='top' class='btn btn-primary' value='{{ faq.id }}' >
+                      <i class="fa fa-external-link" aria-hidden="true"></i>
+                      </a>
+                    </td>
+                  </tr>
+          {% else %}
+            <tr>
+              <td colspan="9">
+                {{ l('No records available') }}
+              </td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+      {% if pagination %}
+        {{ pagination|raw}}
+      {% endif %}
+    </form>
+  </div>
+</div>
+{# Box variables #}
+{% set box_id = "faq" %}
+{% set delete_msg = l("Are you sure you want to delete the selected records?") %}
+{% include "blocks/delete_modal.twig" %}
+{% endblock %}
+
+{% block javascripts_footer %}
+  {{ parent() }}
+  <script>
+    {# Delete action #}
+    $("#deleteBtn").click(function(){
+      if($('tbody .checkbox:checked').length > 0){
+        $('.deleteBox_content_post').html("{{ delete_msg }}");
+        $('.deleteAlertBox_faq').html("");
+        $("#delete_faq").modal("show");
+      }
+    });
+
+    $(".deleteBtn_faq" ).click(function(){
+      var faqs = [];
+      $('tbody .checkbox:checked').each(function(){
+        faqs.push($(this).val());
+      });
+
+      kp_preloader("on","#delete_faq .modal-body");
+    $(".deleteBtn_faq").prop('disabled', true);
+
+    $.ajax({
+      url: '{{ base_url("faq/manage/delete") }}',
+      dataType: 'json',
+      type: 'post',
+      contentType: 'application/x-www-form-urlencoded',
+      data: { ids: JSON.stringify(faqs), {{ config_item('csrf_token_name') }}: getCookie('{{ config_item('csrf_cookie_name') }}') },
+      success: function( data, textStatus, jQxhr ){
+        if(data.status == "success"){
+          alertBox(data.message,"success",".deleteAlertBox_faq",false,false);
+            $(".deleteBtn_faq").prop('disabled', true);
+          $(document).on('hide.bs.modal','#delete_faq', function () {location.reload();});
+        }else{
+          alertBox(data.message,"danger",".deleteAlertBox_faq",false,false);
+        }
+      },
+      error: function( jqXhr, textStatus, errorThrown ){ 
+        console.log(errorThrown);
+        alertBox("{{ l('Unable to complete your request') }}","danger",".deleteAlertBox_faq",false,false);
+      },
+      complete: function(){
+        kp_preloader("off","#delete_faq .modal-body");
+        $(".deleteBtn_faq").prop('disabled', false);
+      }
+    });
+
+    $('.deleteBox_content_faq').html("");
+    });
+
+
+    $( ".toggleActiveBtn" ).click(function(){
+      var faq = $( this );
+        $.ajax({
+          url: '{{ base_url("faq/manage/toggle_active") }}',
+          dataType: 'json',
+          type: 'post',
+          contentType: 'application/x-www-form-urlencoded',
+          data: { 
+            id: faq.val(),
+            {{ config_item('csrf_token_name') }}: getCookie('{{ config_item('csrf_cookie_name') }}')
+          },
+          success: function( data, textStatus, jQxhr ){
+              if(data.status == "ok"){
+                faq.toggleClass( "btn-warning" );
+                faq.toggleClass( "btn-primary" );
+                faq.find("i").toggleClass( "fa-eye-slash" );
+                faq.find("i").toggleClass( "fa-eye" );
+                faq.find("i").removeClass("fa-exclamation");
+              }else{
+                faq.find("i").addClass("fa-exclamation");
+                faq.find("i").removeClass("fa-toggle-on");
+              }
+          },
+          error: function( jqXhr, textStatus, errorThrown ){ 
+              faq.find("i").addClass("fa-exclamation");
+              faq.find("i").removeClass("fa-eye");
+              faq.find("i").removeClass("fa-eye-slash");
+              console.log(errorThrown); 
+          }
+        });
+    });
+
+  </script>
+{% endblock %}

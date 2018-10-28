@@ -1,0 +1,61 @@
+{% extends "base_dashboard.twig" %}
+
+{% block title %}
+  {{ l("Add new FAQ") }}
+{% endblock %}
+
+{% block body %}
+  {{ parent() }}
+{% if validation_errors() is not empty %}
+  <div class="alert alert-danger"> 
+      {{ validation_errors() }}
+  </div>
+{% endif %}
+
+<div class="panel panel-default">
+  <div class="panel-heading">
+    <h3 class="panel-title">
+      <i class="fa fa-question-circle"></i> {{ l("FAQs") }}
+  </div>
+  <div class="panel-body has-responsive-table">
+    <div class="row">
+      <div class="col-sm-12">
+        <a href="{{ base_url("faq/manage") }}" class="btn btn-primary right">
+          <i class="fa fa-plus"></i> {{ l("Manage FAQs") }}
+        </a>
+      </div>
+    </div>
+    {{ form_open() }}
+    <div class="row">
+      <div class="col-sm-10">
+        <div class="form-group">
+          <label for="question">{{l('Question')}}:</label>
+          <input type="question" name="question" class="form-control" id="question" value="{{ input_post("question") }}">
+        </div>
+      </div>
+      <div class="col-sm-2">
+        <div class="form-group">
+          <label for="sort">{{l('Order')}}:</label>
+          <input type="number" name="sort" class="form-control" id="sort" value="{{ input_post("sort") }}">
+        </div>
+      </div>
+    </div>
+    <div class="form-group">
+      <input type='checkbox' class='checkbox checkbox-style' name='active' id='active' {% if  input_post("active") == "on"%}checked {% endif %}>
+      <label for='active'></label>
+      <label for='active'>{{ l('Publish this FAQ') }}</label>
+    </div>
+    <div class="form-group">
+      <label for="answer">{{l('Answer')}}:</label>
+      <textarea rows="10" name="answer" class="form-control" id="answer">{{ input_post("answer") }}</textarea>
+    </div>
+    <button type="submit" class="btn btn-primary">{{l('Save')}}</button>
+    </form>
+  </div>
+</div>
+{% endblock %}
+{% block javascripts_footer %}
+  {{ parent() }}
+  <script src="{{ assets('theme/default/tinymce/tinymce.min.js') }}"></script>
+  <script>tinymce.init({selector:'#answer',relative_urls: false,plugins: "fullscreen,code,media,image" });</script>
+{% endblock %}

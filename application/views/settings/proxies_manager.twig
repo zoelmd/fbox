@@ -1,0 +1,250 @@
+{% extends "base_dashboard.twig" %}
+
+{% block title %}
+  {{ l('Proxies') }}
+{% endblock %}
+
+
+{% block body %}
+  {{ parent() }}
+<div class="settings">
+  <div class="row ">
+    <div class="tabbable tabs-left">
+      <div class="col-xs-12 col-sm-3 settingsTabs">
+        {% set current_page = 'Proxies_manager' %}
+        {% include "settings/tabs.twig" %}
+      </div>
+      <div class="col-xs-12 col-sm-9 settingsContent">
+        <div class="row tab-content">
+          <div class="col-xs-12">
+            <h4 class="tab-title"><i class="fa fa-user"></i>  {{ l('Proxies manager') }}</h4>
+          </div>
+          <div class="col-xs-12">
+            <div class="SettingsContent">
+              <button class="btn btn-primary pull-right" data-toggle="modal" data-target="#addNewProxy">{{ l('Add new') }}</button>
+
+              {% if app_settings.use_proxy == 0 %}
+                <button class="btn btn-warning pull-right" id="disbaleProxy" value="1">{{l('Enable proxy')}}</button>
+              {%else%}
+                <button class="btn btn-primary pull-right" id="disbaleProxy" value="0">{{l('Disable proxy')}}</button>
+              {%endif%}
+
+              <br />
+              <div class="row responsive-table">
+                <div class="col-md-12">
+                  <table class="table table-bordered table-striped">
+                    <thead>
+                      <tr>
+                        <td>{{ l('Host') }}</td>
+                        <td>{{ l('Port') }}</td>
+                        <td>{{ l('Username') }}</td>
+                        <td>{{ l('Password') }}</td>
+                        <td></td>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {% for proxy in proxies %}
+                        <tr class="dataRow">
+                          <td>{{ proxy.host }}</td>
+                          <td>{{ proxy.port }}</td>
+                          <td>{{ proxy.user }}</td>
+                          <td>{{ proxy.pass }}</td>
+                          <td>
+                            <button type="button" id="delete" value="{{ proxy.id }}" class="btn btn-danger deleteBtn">
+                              <i class="fa fa-trash fa-fw" aria-hidden="true"></i>
+                               <span class="hidden-sm-down">{{ l('Delete') }}</span>
+                            </button>
+                          </td>
+                        </tr>
+                      {% else %}
+                        <td colspan="5">{{ l('No data to display') }}</td>
+                      {% endfor %}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+{# Add details #}
+<div id="addNewProxy" class="modal fade" role="dialog" data-backdrop="static">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header">
+        <button type="button" class="close" data-dismiss="modal">&times;</button>
+        <h4 class="modal-title">{{ l('Add new proxy') }}</h4>
+      </div>
+      <div class="modal-body">
+        <div class="addProxyAlertBox"></div>
+        {{ form_open() }}
+          
+          <div class="form-group">
+            <label for="host">{{ l('Host') }}</label>
+            <input type="text" class="form-control" name="host" id="host" placeholder="{{ l('Proxy host') }}">
+          </div>
+
+          <div class="form-group">
+            <label for="port">{{ l('Port') }}</label>
+            <input type="text" class="form-control" name="port" id="port" placeholder="{{ l('Proxy port') }}">
+          </div>
+
+          <div class="form-group">
+            <label for="username">{{ l('Username') }}</label>
+            <input type="text" class="form-control" name="username" id="username" placeholder="{{ l('Proxy username') }}">
+          </div>
+
+          <div class="form-group">
+            <label for="password">{{ l('Password') }}</label>
+            <input type="text" class="form-control" name="password" id="password" placeholder="{{ l('Proxy password') }}">
+          </div>
+
+        </form>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-default" data-dismiss="modal">{{ l('Close') }}</button>
+        <button type="button" class="btn btn-primary addNewProxyBtn">{{ l('Save') }}</button>
+      </div>
+    </div>
+    </div>
+  </div>
+</div>
+
+{# Box variables #}
+{% set box_id = "proxy" %}
+{% set delete_msg = l("Are you sure you want to delete this proxy?") %}
+{% include "blocks/delete_modal.twig" %}
+
+{% endblock %}
+
+{%  block javascripts_footer %}
+  {{ parent() }}
+  <script type="text/javascript">
+    {# Delete action #}
+    var deleteBtn;
+
+    $(".deleteBtn").click(function(){
+      deleteBtn = this;
+      $('.deleteAlertBox_proxy').html("");
+      $("#delete_proxy").modal("show");
+    });
+
+    $(".deleteBtn_proxy" ).click(function(){
+      proxyID = $(deleteBtn).val();
+      kp_preloader("off","#delete_proxy .modal-body");
+      $.ajax({
+        url: '{{ base_url("settings/proxies_manager/delete") }}',
+        dataType: 'json',
+        type: 'post',
+        contentType: 'application/x-www-form-urlencoded',
+        data: {
+          id: proxyID,
+          {{ config_item('csrf_token_name') }}: getCookie('{{ config_item('csrf_cookie_name') }}') 
+        },
+        success: function( data, textStatus, jQxhr ){
+          if(data.status == "success"){
+            alertBox(data.message,"success",".deleteAlertBox_proxy",false,false);
+            $(".deleteBtn_proxy").prop('disabled', true);
+            $(document).on('hide.bs.modal','#delete_proxy', function () {location.reload();});
+          }else{
+            alertBox(data.message,"danger",".deleteAlertBox_proxy",false,false);
+            $(document).on('hide.bs.modal','#delete_proxy', function () {location.reload();});
+          }
+        },
+        error: function( jqXhr, textStatus, errorThrown ){ 
+          console.log(errorThrown);
+          alertBox("{{ l('Unable to complete your request') }}","danger",".deleteAlertBox_proxy",false,false);
+        },
+        complete: function(){
+          kp_preloader("off","#delete_proxy .modal-body");
+        }
+      });
+      $('.deleteBox_content_proxy').html("");
+    });
+
+    {# Adding New proxy #}
+    $('.addNewProxyBtn').click(function(){
+      kp_preloader("on","#addNewProxy .modal-body");
+      $.ajax({
+        url: '{{ base_url("settings/proxies_manager/add") }}',
+        dataType: 'json',
+        type: 'post',
+        contentType: 'application/x-www-form-urlencoded',
+        data: {
+          host: $("#addNewProxy #host").val(),
+          port: $("#addNewProxy #port").val(),
+          user: $("#addNewProxy #username").val(),
+          pass: $("#addNewProxy #password").val(),
+          {{ config_item('csrf_token_name') }}: getCookie('{{ config_item('csrf_cookie_name') }}')
+        },
+        success: function( data, textStatus, jQxhr ){
+          if(data.status == "success"){
+            if(data.message !== null && typeof data.message === 'object'){
+              htmlData = "<ul>";
+              Object.keys(data.message).forEach(function(key) {
+                  htmlData += "<li>" + data.message[key] + "</li>";
+              });
+              htmlData += "</ul>";
+            }else{
+              htmlData = data.message;
+            }
+            alertBox(htmlData,"success",".addProxyAlertBox",false,false);
+            $(document).on('hide.bs.modal','#addNewProxy', function () {location.reload();});
+          }else{
+            if(data.message !== null && typeof data.message === 'object'){
+              htmlData = "<ul>";
+              Object.keys(data.message).forEach(function(key) {
+                  htmlData += "<li>" + data.message[key] + "</li>";
+              });
+              htmlData += "</ul>";
+            }else{
+              htmlData = data.message;
+            }
+            alertBox(htmlData,"danger",".addProxyAlertBox",false,false);
+          }
+        },
+        error: function( jqXhr, textStatus, errorThrown ){ 
+          console.log(errorThrown);
+        },
+        complete: function(){
+          kp_preloader("off","#addNewProxy .modal-body");
+        }
+      });
+    });
+
+    $('#disbaleProxy').on('click',function(){
+      kp_preloader("on");
+      $.ajax({
+        url: '{{ base_url("settings/proxies_manager/disable/") }}'+$('#disbaleProxy').val(),
+        dataType: 'json',
+        type: 'GET',
+        contentType: 'application/x-www-form-urlencoded',
+        success: function( data, textStatus, jQxhr ){
+          if(data.status == "ok"){
+            if(data.option_status == 0){
+              $("#disbaleProxy").val(1);
+              $("#disbaleProxy").removeClass('btn-primary');
+              $("#disbaleProxy").addClass('btn-warning');
+              $("#disbaleProxy").text('{{l('Enable proxy')}}');
+            }else{
+              $("#disbaleProxy").val(0);
+              $("#disbaleProxy").removeClass('btn-warning');
+              $("#disbaleProxy").addClass('btn-primary');
+              $("#disbaleProxy").text('{{l('Disable proxy')}}');
+            }
+          }
+        },
+        error: function( jqXhr, textStatus, errorThrown ){ 
+          console.log(errorThrown);
+        },
+        complete: function(){
+          kp_preloader("off");
+        }
+      });
+    });
+  </script>
+{% endblock %}

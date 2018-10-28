@@ -1,0 +1,136 @@
+{% extends "base_dashboard.twig" %}
+
+{% block title %}{{ l('Edit Notification') }}{% endblock %}
+
+{% block stylesheets %}
+	{{ parent() }}
+	<link href="{{ assets('theme/default/css/token-input-facebook.css') }}" rel="stylesheet" type="text/css" />
+{% endblock %}
+
+{% block body %}
+{{ parent() }}
+{% if validation_errors() is not empty %}
+  <div class="alert alert-danger"> 
+      {{ validation_errors() }}
+  </div>
+{% endif %}
+
+ {% if input_post("title") is empty %}
+  {{ set_input_post('title', notification.row('title') ) }}
+{% endif %}
+
+{% if input_post("type") is empty %}
+  {{ set_input_post('type', notification.row('type')) }}
+{% endif %}
+
+{% if input_post("content") is empty %}
+  {{ set_input_post('content', notification.row('content')) }}
+{% endif %}
+
+{% if input_post("delete_after") is empty %}
+  {{ set_input_post('delete_after', notification.row('delete_after')) }}
+{% endif %}
+
+<div class="panel panel-default">
+	<div class="panel-heading">
+		<h3 class="panel-title">
+			<i class="fa fa-bell" aria-hidden="true"></i> 
+			{{ l("Edit Notification") }}
+		</h3>
+	</div>
+	<div class="panel-body">
+		<div class="row">
+			<div class="col-sm-12">
+				<a href="{{ base_url("notifications") }}" class="btn btn-primary pull-right" >
+					<i class="fa fa-bell fa-fw" aria-hidden="true"></i> {{ l('Manage notifications') }}
+				</a>
+				<a href="{{ base_url("notifications/add") }}" class="btn btn-primary pull-right" >
+					<i class="fa fa-plus fa-fw" aria-hidden="true"></i> {{ l('Add new notification') }}
+				</a>
+			</div>
+		</div>
+		<!-- Add notification -->
+        <div class="messageBox"></div>
+        {{ form_open() }}
+        <input type="hidden" name="id" value="{{notification.row('id')}}">
+      	<div class="row">
+        	<div class="col-sm-12 col-md-6">
+            	<div class="form-group">
+			    	<label for="title" class="sr-only">{{ l('Title') }}</label>
+			    	<input type="text" name="title" id="title" class="form-control" value="{{ input_post("title") }}" placeholder="{{ l('Title') }}">
+				</div>
+         	</div>
+         	<div class="col-sm-12 col-md-6">
+            	<div class="form-group">
+			    	<label for="title" class="sr-only">{{ l('Type') }}</label>
+			    	<select name="type" id="type" class="form-control">
+			    		<option value="">{{ l('Choose notification type') }}</option>
+			    		
+			    		<option value="danger" style="background: #a94442;color:white" {% if input_post("type") == "danger" %}selected{% endif %}>{{ l('Danger') }}</option>
+			    		
+			    		<option value="warning" style="background: #dab76d;color:white" {% if input_post("type") == "warning" %}selected{% endif %}>{{ l('Warning') }}</option>
+			    		
+			    		<option value="info" style="background: #31708f;color:white" {% if input_post("type") == "info" %}selected{% endif %}>{{ l('info') }}</option>
+			    		
+			    		<option value="success" style="background: #3c763d;color:white" {% if input_post("type") == "success" %}selected{% endif %}>{{ l('Success') }}</option>
+			    		
+			    		<option value="primary" style="background: #{{ app_settings['theme_color'] }};color:white" {% if input_post("type") == "primary" %}selected{% endif %}>{{ l('primary') }}</option>
+			    	</select>
+				</div>
+         	</div>
+			<div class="col-sm-12">
+				<div class="form-group">
+					<label for="content" class="sr-only">{{ l('notification Content') }}</label>
+					<textarea name="content" id="content" class="form-control" placeholder="{{ l('Notifications content') }}">{{ input_post("content") }}</textarea>
+				</div>
+			</div>
+  			<div class="col-sm-12">
+  				<div class="form-group">
+					<label for="recipients">{{ l('Recipients') }} (<small>{{ l('Search for users by username or email') }}</small>)</label>
+					<input name="recipients" id="recipients" class="form-control autocomplete" placeholder="{{ l('Notifications recipients') }}"/>
+				</div>
+			</div>
+			<div class="col-sm-12">
+  				<div class="form-group">
+  					<input type='checkbox' class='checkbox checkbox-style' name='recipients-all' id='recipients-all' value='all' {% if recipients == 0 %}checked{% endif %} />
+					<label for='recipients-all'></label>
+					<label for='recipients-all'> <small>{{ l('Send to all Users') }}</small></label>
+				</div>
+			</div>
+			<div class="col-sm-12 col-md-6">
+            	<div class="form-group">
+			    	<label for="delete_after">{{ l('Disable the notification after') }}</label>
+			    	<select name="delete_after" id="delete_after" class="form-control">
+			    		<option value="seen" {% if input_post("delete_after") == "seen" %}selected{% endif %}>{{ l('Seen') }}</option>
+			    		<option value="close" {% if input_post("delete_after") == "close" %}selected{% endif %}>{{ l('Close') }}</option>
+			    	</select>
+				</div>
+         	</div>
+  		</div>
+  		<button type="submit" class="btn btn-primary">{{l('Save')}}</button>
+  		</form>
+	</div>
+</div>
+{% endblock %}
+
+{% block javascripts_footer %}
+	{{ parent() }}
+	<script src="{{ assets('theme/default/js/libs/jquery.tokeninput.js') }}"></script>
+	<script src="{{ assets('theme/default/tinymce/tinymce.min.js') }}"></script>
+  	<script>tinymce.init({selector:'#content',relative_urls: false,plugins: "fullscreen,code,media,image" });</script>
+	<script type="text/javascript">
+    $(document).ready(function() {
+        var autocomplete = $(".autocomplete").tokenInput("{{ base_url('users_manager/search_get') }}",{
+			searchingText: '{{ l('Searching...') }}',
+        	theme: "facebook",
+        	preventDuplicates: true,
+        	tokenFormatter: function(item){ return '<li><p>'+item.name+'</p><input type="hidden" value="'+item.id+'" name="recipients_ids[]"/></li>' } 
+        });
+
+    	{% for r in recipients %}
+    	autocomplete.tokenInput("add", {id: '{{ r.id }}', name: '{{r.name}}'});
+    	{% endfor %}
+       
+	});
+    </script>
+{% endblock %}
